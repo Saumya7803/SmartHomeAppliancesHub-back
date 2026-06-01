@@ -4,7 +4,8 @@ dotenv.config();
 
 const nodeEnv = process.env.NODE_ENV || "development";
 const isRender = process.env.RENDER === "true" || Boolean(process.env.RENDER_SERVICE_ID);
-const isProductionLike = nodeEnv === "production" || isRender;
+const isHostedPort = Boolean(process.env.PORT) && process.env.PORT !== "5000";
+const isProductionLike = nodeEnv === "production" || isRender || isHostedPort;
 
 const defaultClientOrigins = [
   "http://localhost:5173",

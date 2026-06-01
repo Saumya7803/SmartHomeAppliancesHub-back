@@ -27,7 +27,7 @@ async function startServer() {
   } catch (error) {
     console.error("Failed to start backend:", error);
     console.error(
-      "Verify MySQL is running and backend/.env has correct MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE."
+      "Verify MySQL is reachable and the environment has MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE, or a MYSQL_URL/DATABASE_URL. On Render, use an external managed MySQL database; localhost will not work."
     );
     process.exit(1);
   }

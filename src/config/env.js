@@ -3,6 +3,8 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const nodeEnv = process.env.NODE_ENV || "development";
+const isRender = process.env.RENDER === "true" || Boolean(process.env.RENDER_SERVICE_ID);
+const isProductionLike = nodeEnv === "production" || isRender;
 
 const defaultClientOrigins = [
   "http://localhost:5173",
@@ -54,7 +56,7 @@ function parseMySqlUrl(value) {
 function getRequiredEnv(name) {
   const value = process.env[name];
 
-  if (nodeEnv === "production" && !value) {
+  if (isProductionLike && !value) {
     throw new Error(`Missing required environment variable: ${name}`);
   }
 
@@ -66,7 +68,7 @@ const configuredSeedUsers = parseBooleanEnv(process.env.SEED_DEFAULT_USERS);
 const configuredMySqlSsl = parseBooleanEnv(process.env.MYSQL_SSL);
 const configuredCreateDatabase = parseBooleanEnv(process.env.MYSQL_CREATE_DATABASE);
 
-if (nodeEnv === "production" && !process.env.JWT_SECRET) {
+if (isProductionLike && !process.env.JWT_SECRET) {
   throw new Error("Missing required environment variable: JWT_SECRET");
 }
 
@@ -91,10 +93,10 @@ export const env = {
       rejectUnauthorized: parseBooleanEnv(process.env.MYSQL_SSL_REJECT_UNAUTHORIZED) ?? true,
       ca: process.env.MYSQL_SSL_CA ? process.env.MYSQL_SSL_CA.replace(/\\n/g, "\n") : "",
     },
-    createDatabase: configuredCreateDatabase ?? nodeEnv !== "production",
+    createDatabase: configuredCreateDatabase ?? !isProductionLike,
   },
   seedUsers: {
-    enabled: configuredSeedUsers ?? nodeEnv !== "production",
+    enabled: configuredSeedUsers ?? !isProductionLike,
     superAdmin: {
       name: process.env.DEFAULT_SUPER_ADMIN_NAME || "Super Admin",
       email: process.env.DEFAULT_SUPER_ADMIN_EMAIL || "admin@smarthome.com",

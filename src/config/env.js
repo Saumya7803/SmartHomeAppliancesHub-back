@@ -12,10 +12,16 @@ const defaultClientOrigins = [
   "http://127.0.0.1:5173",
   "http://localhost:5174",
   "http://127.0.0.1:5174",
+  "https://smarthomeapplianceshub-frontend.onrender.com",
 ];
 
 const configuredOrigins = process.env.CLIENT_ORIGIN
-  ? process.env.CLIENT_ORIGIN.split(",").map((origin) => origin.trim()).filter(Boolean)
+  ? [
+      ...new Set([
+        ...defaultClientOrigins,
+        ...process.env.CLIENT_ORIGIN.split(",").map((origin) => origin.trim()).filter(Boolean),
+      ]),
+    ]
   : defaultClientOrigins;
 
 function parseBooleanEnv(value) {

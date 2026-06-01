@@ -64,13 +64,30 @@ function getRequiredEnv(name) {
   return value;
 }
 
+function isLocalMySqlHost(value) {
+  return ["localhost", "127.0.0.1", "::1"].includes(String(value || "").trim().toLowerCase());
+}
+
 const mysqlUrlConfig = parseMySqlUrl(process.env.MYSQL_URL || process.env.DATABASE_URL);
 const configuredSeedUsers = parseBooleanEnv(process.env.SEED_DEFAULT_USERS);
 const configuredMySqlSsl = parseBooleanEnv(process.env.MYSQL_SSL);
 const configuredCreateDatabase = parseBooleanEnv(process.env.MYSQL_CREATE_DATABASE);
+const mysqlHost = mysqlUrlConfig.host || process.env.MYSQL_HOST || getRequiredEnv("MYSQL_HOST") || "localhost";
+const mysqlPort = Number(mysqlUrlConfig.port || process.env.MYSQL_PORT || 3306);
+const mysqlUser = mysqlUrlConfig.user || process.env.MYSQL_USER || getRequiredEnv("MYSQL_USER") || "root";
+const mysqlPassword = mysqlUrlConfig.password || process.env.MYSQL_PASSWORD || "";
+const mysqlDatabase =
+  mysqlUrlConfig.database ||
+  process.env.MYSQL_DATABASE ||
+  getRequiredEnv("MYSQL_DATABASE") ||
+  "smarthome_b2b";
 
 if (isProductionLike && !process.env.JWT_SECRET) {
   throw new Error("Missing required environment variable: JWT_SECRET");
+}
+
+if (isProductionLike && isLocalMySqlHost(mysqlHost)) {
+  throw new Error("MYSQL_HOST cannot be localhost on Render. Set MYSQL_URL to your Railway public MySQL URL.");
 }
 
 export const env = {
@@ -80,15 +97,11 @@ export const env = {
   jwtSecret: process.env.JWT_SECRET || "dev_jwt_secret_change_this",
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "1d",
   mysql: {
-    host: process.env.MYSQL_HOST || mysqlUrlConfig.host || getRequiredEnv("MYSQL_HOST") || "localhost",
-    port: Number(process.env.MYSQL_PORT || mysqlUrlConfig.port || 3306),
-    user: process.env.MYSQL_USER || mysqlUrlConfig.user || getRequiredEnv("MYSQL_USER") || "root",
-    password: process.env.MYSQL_PASSWORD || mysqlUrlConfig.password || "",
-    database:
-      process.env.MYSQL_DATABASE ||
-      mysqlUrlConfig.database ||
-      getRequiredEnv("MYSQL_DATABASE") ||
-      "smarthome_b2b",
+    host: mysqlHost,
+    port: mysqlPort,
+    user: mysqlUser,
+    password: mysqlPassword,
+    database: mysqlDatabase,
     ssl: {
       enabled: configuredMySqlSsl ?? mysqlUrlConfig.ssl ?? false,
       rejectUnauthorized: parseBooleanEnv(process.env.MYSQL_SSL_REJECT_UNAUTHORIZED) ?? true,

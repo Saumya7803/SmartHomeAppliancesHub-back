@@ -242,6 +242,20 @@ async function ensureUserColumn(columnName, definition) {
   }
 }
 
+async function ensureCategoryColumn(columnName, definition) {
+  const [rows] = await dbPool.execute(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'categories' AND COLUMN_NAME = ?
+     LIMIT 1`,
+    [env.mysql.database, columnName]
+  );
+
+  if (!rows.length) {
+    await dbPool.execute(`ALTER TABLE categories ADD COLUMN ${definition}`);
+  }
+}
+
 async function ensureTableIndex(tableName, indexName, definition) {
   const [rows] = await dbPool.execute(
     `SELECT INDEX_NAME
@@ -253,6 +267,20 @@ async function ensureTableIndex(tableName, indexName, definition) {
 
   if (!rows.length) {
     await dbPool.execute(`ALTER TABLE ${tableName} ADD INDEX ${definition}`);
+  }
+}
+
+async function ensureUniqueTableIndex(tableName, indexName, definition) {
+  const [rows] = await dbPool.execute(
+    `SELECT INDEX_NAME, NON_UNIQUE
+     FROM INFORMATION_SCHEMA.STATISTICS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ?
+     LIMIT 1`,
+    [env.mysql.database, tableName, indexName]
+  );
+
+  if (!rows.length) {
+    await dbPool.execute(`ALTER TABLE ${tableName} ADD UNIQUE INDEX ${definition}`);
   }
 }
 
@@ -275,9 +303,46 @@ async function ensureCategoriesTable() {
     `CREATE TABLE IF NOT EXISTS categories (
       id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
       name VARCHAR(120) NOT NULL UNIQUE,
+      slug VARCHAR(160) NULL,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     )`
   );
+
+  await ensureCategoryColumn("slug", "slug VARCHAR(160) NULL AFTER name");
+  await ensureUniqueTableIndex("categories", "idx_categories_slug", "idx_categories_slug (slug)");
+}
+
+async function backfillCategorySlugs() {
+  const [rows] = await dbPool.execute(
+    `SELECT id, name, slug
+     FROM categories
+     ORDER BY id ASC`
+  );
+
+  const takenSlugs = new Set(
+    rows
+      .map((row) => String(row.slug || "").trim().toLowerCase())
+      .filter(Boolean)
+  );
+
+  for (const row of rows) {
+    const existingSlug = String(row.slug || "").trim();
+    if (existingSlug) {
+      continue;
+    }
+
+    const baseSlug = slugifyCategoryName(row.name);
+    let candidate = baseSlug;
+    let suffix = 2;
+
+    while (takenSlugs.has(candidate.toLowerCase())) {
+      candidate = `${baseSlug}-${suffix}`;
+      suffix += 1;
+    }
+
+    takenSlugs.add(candidate.toLowerCase());
+    await dbPool.execute(`UPDATE categories SET slug = ? WHERE id = ?`, [candidate, row.id]);
+  }
 }
 
 async function ensureUsersTable() {
@@ -1228,6 +1293,7 @@ export async function ensureBrandCatalog() {
 
 export async function ensureCategoryCatalog() {
   await ensureCategoriesTable();
+  await backfillCategorySlugs();
 
   for (const categoryName of DEFAULT_CATEGORIES) {
     const slug = slugifyCategoryName(categoryName);

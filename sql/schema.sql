@@ -365,16 +365,17 @@ ON DUPLICATE KEY UPDATE
   company = VALUES(company),
   status = VALUES(status);
 
-INSERT INTO categories (name)
+INSERT INTO categories (name, slug)
 VALUES
-  ('Refrigerator'),
-  ('Air Conditioner'),
-  ('Air Cooler'),
-  ('Washing Machine'),
-  ('Microwave'),
-  ('TV')
+  ('Refrigerator', 'refrigerator'),
+  ('Air Conditioner', 'air-conditioner'),
+  ('Air Cooler', 'air-cooler'),
+  ('Washing Machine', 'washing-machine'),
+  ('Microwave', 'microwave'),
+  ('TV', 'tv')
 ON DUPLICATE KEY UPDATE
-  name = VALUES(name);
+  name = VALUES(name),
+  slug = VALUES(slug);
 
 INSERT INTO brands (name, slug, logo, description)
 VALUES

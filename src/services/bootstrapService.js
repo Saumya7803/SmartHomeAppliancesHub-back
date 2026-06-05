@@ -653,13 +653,15 @@ async function ensureApiKeysTable() {
 }
 
 async function ensureProductSeedCategory(categoryName) {
+  const slug = slugifyCategoryName(categoryName);
   const [result] = await dbPool.execute(
-    `INSERT INTO categories (name)
-     VALUES (?)
+    `INSERT INTO categories (name, slug)
+     VALUES (?, ?)
      ON DUPLICATE KEY UPDATE
        id = LAST_INSERT_ID(id),
-       name = VALUES(name)`,
-    [categoryName]
+       name = VALUES(name),
+       slug = VALUES(slug)`,
+    [categoryName, slug]
   );
 
   return Number(result.insertId);
@@ -1191,6 +1193,14 @@ function slugifyBrandName(name) {
     .replace(/^-+|-+$/g, "");
 }
 
+function slugifyCategoryName(name) {
+  return String(name || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 export async function ensureBrandCatalog() {
   await dbPool.execute(
     `CREATE TABLE IF NOT EXISTS brands (
@@ -1220,11 +1230,14 @@ export async function ensureCategoryCatalog() {
   await ensureCategoriesTable();
 
   for (const categoryName of DEFAULT_CATEGORIES) {
+    const slug = slugifyCategoryName(categoryName);
     await dbPool.execute(
-      `INSERT INTO categories (name)
-       VALUES (?)
-       ON DUPLICATE KEY UPDATE name = VALUES(name)`,
-      [categoryName]
+      `INSERT INTO categories (name, slug)
+       VALUES (?, ?)
+       ON DUPLICATE KEY UPDATE
+         name = VALUES(name),
+         slug = VALUES(slug)`,
+      [categoryName, slug]
     );
   }
 }

@@ -83,7 +83,7 @@ export async function listQuotations({
     actorId,
   });
 
-  const [[countRow]] = await dbPool.execute(
+  const [[countRow]] = await dbPool.query(
     `SELECT COUNT(*) AS total
      FROM quotations q
      JOIN enquiries e ON e.id = q.enquiry_id
@@ -91,7 +91,7 @@ export async function listQuotations({
     filters.params
   );
 
-  const [rows] = await dbPool.execute(
+  const [rows] = await dbPool.query(
     `SELECT
        q.*,
        CONCAT('ENQ-', LPAD(e.id, 6, '0')) AS enquiry_code,

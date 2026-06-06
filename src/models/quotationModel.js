@@ -122,7 +122,7 @@ export async function listQuotations({
 }
 
 export async function findQuotationById(quotationId) {
-  const [rows] = await dbPool.execute(
+  const [rows] = await dbPool.query(
     `SELECT
        q.*,
        CONCAT('ENQ-', LPAD(e.id, 6, '0')) AS enquiry_code,
@@ -149,7 +149,7 @@ export async function findQuotationById(quotationId) {
 }
 
 export async function createQuotation(payload) {
-  const [result] = await dbPool.execute(
+  const [result] = await dbPool.query(
     `INSERT INTO quotations
        (
          enquiry_id,
@@ -199,7 +199,7 @@ export async function createQuotation(payload) {
   const quotationId = Number(result.insertId);
   if (!payload.quotation_number) {
     const quotationNumber = `QTN-${String(quotationId).padStart(6, "0")}`;
-    await dbPool.execute(`UPDATE quotations SET quotation_number = ? WHERE id = ?`, [
+    await dbPool.query(`UPDATE quotations SET quotation_number = ? WHERE id = ?`, [
       quotationNumber,
       quotationId,
     ]);
@@ -264,7 +264,7 @@ export async function updateQuotationById(quotationId, updates = {}) {
   }
 
   params.push(quotationId);
-  const [result] = await dbPool.execute(
+  const [result] = await dbPool.query(
     `UPDATE quotations
      SET ${assignments.join(", ")}, updated_at = CURRENT_TIMESTAMP
      WHERE id = ?`,

@@ -9,11 +9,15 @@ const defaultClientOrigins = [
   "http://127.0.0.1:5173",
   "http://localhost:5174",
   "http://127.0.0.1:5174",
+  "https://smarthomeappliances.in",
+  "https://www.smarthomeappliances.in",
 ];
 
 const configuredOrigins = process.env.CLIENT_ORIGIN
   ? process.env.CLIENT_ORIGIN.split(",").map((origin) => origin.trim()).filter(Boolean)
-  : defaultClientOrigins;
+  : [];
+
+const clientOrigins = [...new Set([...defaultClientOrigins, ...configuredOrigins])];
 
 function parseBooleanEnv(value) {
   const normalized = String(value || "")
@@ -73,7 +77,7 @@ if (nodeEnv === "production" && !process.env.JWT_SECRET) {
 export const env = {
   nodeEnv,
   port: Number(process.env.PORT || 5000),
-  clientOrigins: configuredOrigins,
+  clientOrigins,
   jwtSecret: process.env.JWT_SECRET || "dev_jwt_secret_change_this",
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "1d",
   mysql: {

@@ -54,7 +54,15 @@ app.use(
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(apiRequestLogger);
-app.use("/api", apiLimiter);
+app.use("/api", (req, res, next) => {
+  // Keep read-heavy pages responsive while still throttling write traffic.
+  if (["GET", "HEAD", "OPTIONS"].includes(req.method)) {
+    next();
+    return;
+  }
+
+  apiLimiter(req, res, next);
+});
 app.use("/api/admin/login", authLimiter);
 app.use("/api/auth/login", authLimiter);
 app.use("/api/customer-auth/signin", authLimiter);

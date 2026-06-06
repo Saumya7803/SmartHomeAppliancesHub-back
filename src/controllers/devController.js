@@ -44,7 +44,7 @@ async function loadAuditRows(whereClause = "1=1", params = [], limit = 200) {
      FROM audit_logs l
      LEFT JOIN users u ON u.id = l.user_id
      WHERE ${whereClause}
-     ORDER BY l.created_at DESC
+     ORDER BY l.id DESC
      LIMIT ?`,
     [...params, limit]
   );

@@ -624,6 +624,10 @@ async function ensureAuditLogsTable() {
       INDEX idx_audit_logs_created_at (created_at)
     )`
   );
+
+  await ensureTableIndex("audit_logs", "idx_audit_logs_action_created_at", "idx_audit_logs_action_created_at (action, created_at)");
+  await ensureTableIndex("audit_logs", "idx_audit_logs_action_id", "idx_audit_logs_action_id (action, id)");
+  await ensureTableIndex("audit_logs", "idx_audit_logs_user_id", "idx_audit_logs_user_id (user_id)");
 }
 
 async function upsertDefaultUser({ name, email, password, role }) {

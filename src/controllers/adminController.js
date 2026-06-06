@@ -752,7 +752,7 @@ export async function getSystemLogs(req, res, next) {
        FROM audit_logs l
        LEFT JOIN users u ON u.id = l.user_id
        WHERE l.action = 'api_error'
-       ORDER BY l.created_at DESC
+       ORDER BY l.id DESC
        LIMIT 150`
     );
 
@@ -761,7 +761,7 @@ export async function getSystemLogs(req, res, next) {
        FROM audit_logs l
        LEFT JOIN users u ON u.id = l.user_id
        WHERE l.action <> 'api_error'
-       ORDER BY l.created_at DESC
+       ORDER BY l.id DESC
        LIMIT 150`
     );
 
@@ -1057,7 +1057,7 @@ export async function listAuditLogs(req, res, next) {
       `SELECT l.*, u.name AS user_name, u.email AS user_email
        FROM audit_logs l
        LEFT JOIN users u ON u.id = l.user_id
-       ORDER BY l.created_at DESC
+       ORDER BY l.id DESC
        LIMIT 500`
     );
 

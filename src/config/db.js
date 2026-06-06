@@ -7,6 +7,14 @@ const baseConfig = {
   user: env.mysql.user,
   password: env.mysql.password,
   connectTimeout: 10_000,
+  ...(env.mysql.ssl.enabled
+    ? {
+        ssl: {
+          rejectUnauthorized: env.mysql.ssl.rejectUnauthorized,
+          ...(env.mysql.ssl.ca ? { ca: env.mysql.ssl.ca } : {}),
+        },
+      }
+    : {}),
 };
 
 export const dbPool = mysql.createPool({
@@ -23,6 +31,10 @@ function sanitizeIdentifier(value) {
 }
 
 export async function ensureDatabaseExists() {
+  if (!env.mysql.createDatabase) {
+    return;
+  }
+
   const connection = await mysql.createConnection(baseConfig);
 
   try {

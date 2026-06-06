@@ -88,14 +88,14 @@ export async function listEnquiries({
     mineOnly,
   });
 
-  const [[countRow]] = await dbPool.execute(
+  const [[countRow]] = await dbPool.query(
     `SELECT COUNT(*) AS total
      FROM enquiries e
      ${filters.clause}`,
     filters.params
   );
 
-  const [rows] = await dbPool.execute(
+  const [rows] = await dbPool.query(
     `SELECT
        e.*,
        CONCAT('ENQ-', LPAD(e.id, 6, '0')) AS generated_enquiry_code,
@@ -129,7 +129,7 @@ export async function listEnquiries({
 }
 
 export async function findEnquiryById(enquiryId) {
-  const [rows] = await dbPool.execute(
+  const [rows] = await dbPool.query(
     `SELECT
        e.*,
        CONCAT('ENQ-', LPAD(e.id, 6, '0')) AS generated_enquiry_code,
@@ -157,7 +157,7 @@ export async function findEnquiryById(enquiryId) {
 }
 
 export async function createEnquiry(payload) {
-  const [result] = await dbPool.execute(
+  const [result] = await dbPool.query(
     `INSERT INTO enquiries
        (customer_name, email, phone, product_id, product_name, quantity, message, status, source, assigned_to)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -218,7 +218,7 @@ export async function updateEnquiryById(enquiryId, updates = {}) {
   }
 
   params.push(enquiryId);
-  const [result] = await dbPool.execute(
+  const [result] = await dbPool.query(
     `UPDATE enquiries
      SET ${assignments.join(", ")}, updated_at = CURRENT_TIMESTAMP
      WHERE id = ?`,
@@ -229,7 +229,7 @@ export async function updateEnquiryById(enquiryId, updates = {}) {
 }
 
 export async function listAssignedCustomers(userId) {
-  const [rows] = await dbPool.execute(
+  const [rows] = await dbPool.query(
     `SELECT
        LOWER(email) AS customer_key,
        MAX(customer_name) AS customer_name,

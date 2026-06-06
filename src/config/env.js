@@ -31,7 +31,40 @@ function parseBooleanEnv(value) {
   return null;
 }
 
+function parseMySqlUrl(value) {
+  if (!value) {
+    return {};
+  }
+
+  const parsed = new URL(value);
+  const database = parsed.pathname.replace(/^\/+/, "");
+  const sslParam = parsed.searchParams.get("ssl") || parsed.searchParams.get("ssl-mode");
+
+  return {
+    host: parsed.hostname,
+    port: parsed.port ? Number(parsed.port) : undefined,
+    user: decodeURIComponent(parsed.username || ""),
+    password: decodeURIComponent(parsed.password || ""),
+    database: database ? decodeURIComponent(database) : undefined,
+    ssl:
+      sslParam && !["0", "false", "disable", "disabled"].includes(sslParam.toLowerCase()),
+  };
+}
+
+function getRequiredEnv(name) {
+  const value = process.env[name];
+
+  if (nodeEnv === "production" && !value) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+
+  return value;
+}
+
+const mysqlUrlConfig = parseMySqlUrl(process.env.MYSQL_URL || process.env.DATABASE_URL);
 const configuredSeedUsers = parseBooleanEnv(process.env.SEED_DEFAULT_USERS);
+const configuredMySqlSsl = parseBooleanEnv(process.env.MYSQL_SSL);
+const configuredCreateDatabase = parseBooleanEnv(process.env.MYSQL_CREATE_DATABASE);
 
 if (nodeEnv === "production" && !process.env.JWT_SECRET) {
   throw new Error("Missing required environment variable: JWT_SECRET");
@@ -44,11 +77,21 @@ export const env = {
   jwtSecret: process.env.JWT_SECRET || "dev_jwt_secret_change_this",
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "1d",
   mysql: {
-    host: process.env.MYSQL_HOST || "localhost",
-    port: Number(process.env.MYSQL_PORT || 3306),
-    user: process.env.MYSQL_USER || "root",
-    password: process.env.MYSQL_PASSWORD || "",
-    database: process.env.MYSQL_DATABASE || "smarthome_b2b",
+    host: process.env.MYSQL_HOST || mysqlUrlConfig.host || getRequiredEnv("MYSQL_HOST") || "localhost",
+    port: Number(process.env.MYSQL_PORT || mysqlUrlConfig.port || 3306),
+    user: process.env.MYSQL_USER || mysqlUrlConfig.user || getRequiredEnv("MYSQL_USER") || "root",
+    password: process.env.MYSQL_PASSWORD || mysqlUrlConfig.password || "",
+    database:
+      process.env.MYSQL_DATABASE ||
+      mysqlUrlConfig.database ||
+      getRequiredEnv("MYSQL_DATABASE") ||
+      "smarthome_b2b",
+    ssl: {
+      enabled: configuredMySqlSsl ?? mysqlUrlConfig.ssl ?? false,
+      rejectUnauthorized: parseBooleanEnv(process.env.MYSQL_SSL_REJECT_UNAUTHORIZED) ?? true,
+      ca: process.env.MYSQL_SSL_CA ? process.env.MYSQL_SSL_CA.replace(/\\n/g, "\n") : "",
+    },
+    createDatabase: configuredCreateDatabase ?? nodeEnv !== "production",
   },
   seedUsers: {
     enabled: configuredSeedUsers ?? nodeEnv !== "production",
